@@ -18,7 +18,7 @@ A FastAPI-based machine learning service that predicts employee attrition risk u
 
 ---
 
-## 🎯 Project Overview
+##  Project Overview
 
 ### Problem Statement
 The machine learning model was trained in Google Colab with preprocessed data (encoded categories, scaled features, 44 numerical features). However, the production database contains raw employee data (strings, categories, 31 fields). This API bridges that gap by applying the exact same preprocessing pipeline before making predictions.
@@ -39,7 +39,7 @@ The machine learning model was trained in Google Colab with preprocessed data (e
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 PostgreSQL Database (Raw Data)
@@ -63,9 +63,9 @@ n8n Updates Database
 
 ---
 
-## 📁 Files Explanation
+## Files Explanation
 
-### **Core Application Files** ✅ (Keep These)
+### **Core Application Files**
 
 #### `main.py` ⭐ **MAIN FILE**
 - **Purpose**: FastAPI application with embedded preprocessing pipeline
@@ -119,7 +119,7 @@ n8n Updates Database
 
 ---
 
-### **Setup & Utility Files** ⚙️ (Keep for Reference/Maintenance)
+### **Setup & Utility Files**
 
 #### `standalone_setup.py`
 - **Purpose**: One-time setup script to create preprocessor components
@@ -153,7 +153,7 @@ n8n Updates Database
 
 ---
 
-## 🗄️ Database Setup
+## Database Setup
 
 ### PostgreSQL Table Schema
 
@@ -307,7 +307,7 @@ rm -rf __pycache__
 
 ---
 
-## 🚀 Setup & Installation
+## Setup & Installation
 
 ### Prerequisites
 - Python 3.8 - 3.11 (Python 3.12 may have compatibility issues)
@@ -354,7 +354,7 @@ Ensure `best_attrition_model_gradient_boosting.pkl` exists in the project direct
 
 ---
 
-## 🏃 Running the Application
+## Running the Application
 
 ### Prerequisites Check
 Before starting the API, ensure:
@@ -402,7 +402,7 @@ You should see:
 
 ---
 
-## 🧪 Testing the API
+## Testing the API
 
 ### Step 1: Start the API Server (Required First!)
 
@@ -616,7 +616,7 @@ This tests:
 
 ---
 
-## 🔄 n8n Workflow Integration
+## n8n Workflow Integration
 
 ### Workflow Overview
 The n8n workflow automates the entire prediction pipeline:
@@ -814,7 +814,7 @@ After running the workflow on 10 sample employees:
 
 ---
 
-## 🔌 API Endpoints
+## API Endpoints
 
 ### `GET /`
 **Description**: API root, returns status and available endpoints
@@ -899,7 +899,7 @@ After running the workflow on 10 sample employees:
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Issue: "Can't get attribute 'AttritionPreprocessor'"
 **Cause**: Pickle multiprocessing issue on Windows  
