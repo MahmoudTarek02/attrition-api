@@ -290,23 +290,6 @@ Expected: 10 rows returned
 
 ---
 
-### **Files You Can Delete** ❌
-
-The following files are no longer needed and can be safely deleted:
-
-```bash
-rm app.py setup_preprocessor_components.py
-rm -rf __pycache__
-```
-
-- **`app.py`**: Old version of API, replaced by `main.py`
-- **`setup_preprocessor_components.py`**: Old setup script, replaced by `standalone_setup.py`
-- **`__pycache__/`**: Auto-generated Python cache (will be recreated automatically)
-
-**Note**: Keep `venv/` or conda environment, but don't commit to git (add to `.gitignore`)
-
----
-
 ## Setup & Installation
 
 ### Prerequisites
