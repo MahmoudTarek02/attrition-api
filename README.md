@@ -117,6 +117,18 @@ n8n Updates Database
   joblib==1.3.2
   ```
 
+  ### `employee_data.csv`
+
+  - Purpose: CSV export/import of the `employee_data` table for batch operations and for feeding the n8n workflow.
+  - Format: Each row contains the raw input fields for one employee, with the model outputs appended in the final two columns.
+    - Inputs (all columns except the final two): raw employee attributes sent to the API for preprocessing and prediction (e.g., Age, BusinessTravel, Department, Gender, OverTime, JobRole, etc.).
+    - Outputs (last two columns):
+      - `attrition_prediction` — integer (0 or 1).
+      - `risk_level` — string ("Low", "Medium", "High").
+  - Usage:
+    - Import the CSV into PostgreSQL or read it directly from n8n to POST each row to /predict.
+    - After predictions, populate the output columns in the CSV/database. Optionally add `risk_level` and `prediction_date` if those columns exist.
+
 ---
 
 ### **Setup & Utility Files**
