@@ -125,6 +125,7 @@ n8n Updates Database
     - Outputs (last two columns):
       - `attrition_prediction` — integer (0 or 1).
       - `risk_level` — string ("Low", "Medium", "High").
+      - `message` - model explainability
   - Usage:
     - Import the CSV into PostgreSQL or read it directly from n8n to POST each row to /predict.
     - After predictions, populate the output columns in the CSV/database. Optionally add `risk_level` and `prediction_date` if those columns exist.
