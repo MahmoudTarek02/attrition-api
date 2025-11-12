@@ -1,0 +1,522 @@
+{
+  "name": "Attrition",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a09045d4-3438-4597-8dd1-48de700e1cd9",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "employee_data",
+          "mode": "list",
+          "cachedResultName": "employee_data"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "cdefc7b0-5524-4981-826a-edd1b5f603b5",
+      "name": "Select rows from a table",
+      "credentials": {
+        "postgres": {
+          "id": "Tmt8wEJ3DwHemAjF",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const row = item.json;\n  return {\n    json: {\n      Age: row.age,\n      BusinessTravel: row.businesstravel,\n      DailyRate: row.dailyrate,\n      Department: row.department,\n      DistanceFromHome: row.distancefromhome,\n      Education: row.education,\n      EducationField: row.educationfield,\n      EmployeeNumber: row.employeenumber,\n      EnvironmentSatisfaction: row.environmentsatisfaction,\n      Gender: row.gender,\n      HourlyRate: row.hourlyrate,\n      JobInvolvement: row.jobinvolvement,\n      JobLevel: row.joblevel,\n      JobRole: row.jobrole,\n      JobSatisfaction: row.jobsatisfaction,\n      MaritalStatus: row.maritalstatus,\n      MonthlyIncome: row.monthlyincome,\n      MonthlyRate: row.monthlyrate,\n      NumCompaniesWorked: row.numcompaniesworked,\n      OverTime: row.overtime,\n      PercentSalaryHike: row.percentsalaryhike,\n      PerformanceRating: row.performancerating,\n      RelationshipSatisfaction: row.relationshipsatisfaction,\n      StockOptionLevel: row.stockoptionlevel,\n      TotalWorkingYears: row.totalworkingyears,\n      TrainingTimesLastYear: row.trainingtimeslastyear,\n      WorkLifeBalance: row.worklifebalance,\n      YearsAtCompany: row.yearsatcompany,\n      YearsInCurrentRole: row.yearsincurrentrole,\n      YearsSinceLastPromotion: row.yearssincelastpromotion,\n      YearsWithCurrManager: row.yearswithcurrmanager,\n      \n      // Add prediction results\n      attrition_prediction: row.attrition_prediction,\n      attrition_probability: row.attrition_probability,\n      risk_level: row.risk_level,\n      message: row.message\n    }\n  }\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "33f75175-f7c0-4c5b-9a71-ef187607a3d3",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/predict",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "8e919d85-cc7f-447a-82f0-a1b40eb5fb35",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "employee_data",
+          "mode": "list",
+          "cachedResultName": "employee_data"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "risk_level": "={{ $json.risk_level }}",
+            "attrition_probability": "={{ $json.attrition_probability }}",
+            "employeenumber": "={{ $json.employee_number }}",
+            "message": "={{ $json.message }}"
+          },
+          "matchingColumns": [
+            "employeenumber"
+          ],
+          "schema": [
+            {
+              "id": "employeenumber",
+              "displayName": "employeenumber",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "age",
+              "displayName": "age",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "businesstravel",
+              "displayName": "businesstravel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "dailyrate",
+              "displayName": "dailyrate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "department",
+              "displayName": "department",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "distancefromhome",
+              "displayName": "distancefromhome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "education",
+              "displayName": "education",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "educationfield",
+              "displayName": "educationfield",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "environmentsatisfaction",
+              "displayName": "environmentsatisfaction",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "gender",
+              "displayName": "gender",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "hourlyrate",
+              "displayName": "hourlyrate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "jobinvolvement",
+              "displayName": "jobinvolvement",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "joblevel",
+              "displayName": "joblevel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "jobrole",
+              "displayName": "jobrole",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "jobsatisfaction",
+              "displayName": "jobsatisfaction",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "maritalstatus",
+              "displayName": "maritalstatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "monthlyincome",
+              "displayName": "monthlyincome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "monthlyrate",
+              "displayName": "monthlyrate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "numcompaniesworked",
+              "displayName": "numcompaniesworked",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "overtime",
+              "displayName": "overtime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "percentsalaryhike",
+              "displayName": "percentsalaryhike",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "performancerating",
+              "displayName": "performancerating",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "relationshipsatisfaction",
+              "displayName": "relationshipsatisfaction",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "stockoptionlevel",
+              "displayName": "stockoptionlevel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "totalworkingyears",
+              "displayName": "totalworkingyears",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "trainingtimeslastyear",
+              "displayName": "trainingtimeslastyear",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "worklifebalance",
+              "displayName": "worklifebalance",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yearsatcompany",
+              "displayName": "yearsatcompany",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yearsincurrentrole",
+              "displayName": "yearsincurrentrole",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yearssincelastpromotion",
+              "displayName": "yearssincelastpromotion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yearswithcurrmanager",
+              "displayName": "yearswithcurrmanager",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "attrition_probability",
+              "displayName": "attrition_probability",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "risk_level",
+              "displayName": "risk_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        832,
+        0
+      ],
+      "id": "1574b720-efd7-4080-be16-5ad1edec6c5f",
+      "name": "Update rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "Tmt8wEJ3DwHemAjF",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Select rows from a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Update rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6ca25cee-9c6a-4361-9329-e424aa2d9c08",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3a653ebe951b342ce5a0dc1f82a0902f3cffcf2fdf0b450f5a4a3829297606f6"
+  },
+  "id": "gGlGdvCQciJQtEIt",
+  "tags": []
+}
