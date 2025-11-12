@@ -273,53 +273,187 @@ def health_check():
             "error": str(e)
         }
 
+# @app.post("/predict", response_model=PredictionResponse)
+# def predict(employee_data: EmployeeDataRaw):
+#     """Predict employee attrition from raw employee data."""
+#     try:
+#         # Load model and preprocessor
+#         model, preprocessor = load_model_and_preprocessor()
+        
+#         # Convert Pydantic model to dict
+#         raw_data = employee_data.model_dump()
+        
+#         logger.info(f"Received prediction request for Employee #{raw_data['EmployeeNumber']}")
+        
+#         # Preprocess the raw data
+#         X_preprocessed = preprocessor.transform(raw_data)
+#         logger.info(f"Preprocessing successful. Feature shape: {X_preprocessed.shape}")
+        
+#         # Make prediction
+#         prediction = model.predict(X_preprocessed)[0]
+#         probability = model.predict_proba(X_preprocessed)[0][1]
+        
+#         # Determine risk level
+#         if probability < 0.3:
+#             risk_level = "Low"
+#         elif probability < 0.6:
+#             risk_level = "Medium"
+#         else:
+#             risk_level = "High"
+        
+#         # Generate message
+#         if prediction == 1:
+#             message = f"Employee is predicted to leave. Risk level: {risk_level}"
+#         else:
+#             message = f"Employee is predicted to stay. Risk level: {risk_level}"
+        
+#         logger.info(f"Prediction: {prediction}, Probability: {probability:.4f}, Risk: {risk_level}")
+        
+#         return PredictionResponse(
+#             employee_number=raw_data['EmployeeNumber'],
+#             attrition_prediction=int(prediction),
+#             attrition_probability=round(float(probability), 4),
+#             risk_level=risk_level,
+#             message=message
+#         )
+        
+#     except Exception as e:
+#         logger.error(f"Prediction error: {str(e)}", exc_info=True)
+#         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+
 @app.post("/predict", response_model=PredictionResponse)
 def predict(employee_data: EmployeeDataRaw):
-    """Predict employee attrition from raw employee data."""
+    """Predict employee attrition from raw employee data and provide explainability message."""
     try:
-        # Load model and preprocessor
+        # ============================================================
+        # 1️⃣ Load model and preprocessor
+        # ============================================================
         model, preprocessor = load_model_and_preprocessor()
-        
-        # Convert Pydantic model to dict
+
+        # Convert Pydantic object to dictionary
         raw_data = employee_data.model_dump()
-        
-        logger.info(f"Received prediction request for Employee #{raw_data['EmployeeNumber']}")
-        
-        # Preprocess the raw data
+        emp_id = raw_data.get("EmployeeNumber", -1)
+        logger.info(f"Received prediction request for Employee #{emp_id}")
+
+        # ============================================================
+        # 2️⃣ Preprocess input
+        # ============================================================
         X_preprocessed = preprocessor.transform(raw_data)
-        logger.info(f"Preprocessing successful. Feature shape: {X_preprocessed.shape}")
-        
-        # Make prediction
+        X_df = pd.DataFrame(X_preprocessed, columns=preprocessor.expected_features)
+        logger.info(f"Preprocessing successful. Shape: {X_df.shape}")
+
+        # ============================================================
+        # 3️⃣ Model prediction
+        # ============================================================
         prediction = model.predict(X_preprocessed)[0]
-        probability = model.predict_proba(X_preprocessed)[0][1]
-        
-        # Determine risk level
+        probability = float(model.predict_proba(X_preprocessed)[0][1])
+
+        # Risk categorization
         if probability < 0.3:
             risk_level = "Low"
         elif probability < 0.6:
             risk_level = "Medium"
         else:
             risk_level = "High"
+
+        # ============================================================
+        # 4️⃣ SHAP EXPLANATION (Safe version)
+        # ============================================================
+        reason_text = "Model explanation unavailable."  # Default fallback
         
-        # Generate message
+        try:
+            import shap
+            
+            logger.info("Creating SHAP explainer...")
+            # Use TreeExplainer for tree-based models (more stable)
+            explainer = shap.TreeExplainer(model)
+            logger.info("Computing SHAP values...")
+            shap_values = explainer.shap_values(X_df)
+            
+            # Handle different SHAP output formats
+            if isinstance(shap_values, list):
+                # Binary classification returns [shap_class_0, shap_class_1]
+                shap_vals = shap_values[1][0]  # Get class 1 (attrition) for first sample
+            else:
+                shap_vals = shap_values[0]
+            
+            logger.info(f"SHAP values computed successfully. Shape: {shap_vals.shape}")
+
+            # Build feature impact table
+            feature_impact = pd.DataFrame({
+                "Feature": preprocessor.expected_features,
+                "SHAP Value": shap_vals
+            })
+            feature_impact["abs_val"] = feature_impact["SHAP Value"].abs()
+
+            # SMART SELECTION: Pick features relevant to the prediction
+            if prediction == 1:
+                # Employee will LEAVE → Show features INCREASING attrition (positive SHAP)
+                top_features = feature_impact[feature_impact["SHAP Value"] > 0].sort_values(
+                    "SHAP Value", ascending=False
+                ).head(3)
+            else:
+                # Employee will STAY → Show features DECREASING attrition (negative SHAP)
+                top_features = feature_impact[feature_impact["SHAP Value"] < 0].sort_values(
+                    "SHAP Value", ascending=True
+                ).head(3)
+
+            # Fallback: if no features in expected direction, pick top absolute ones
+            if top_features.empty:
+                top_features = feature_impact.sort_values("abs_val", ascending=False).head(3)
+
+            # Build human-readable explanation
+            reason_phrases = []
+            for _, row in top_features.iterrows():
+                feat_name = row['Feature']
+                shap_val = row['SHAP Value']
+                
+                # Make feature names more readable
+                feat_display = feat_name.replace('_', ' ')
+                
+                if shap_val > 0:
+                    reason_phrases.append(f"{feat_display} (pushes toward leaving)")
+                else:
+                    reason_phrases.append(f"{feat_display} (supports staying)")
+
+            if reason_phrases:
+                reason_text = "; ".join(reason_phrases)
+            else:
+                reason_text = "No significant factors identified."
+
+        except Exception as shap_error:
+            logger.error(f"SHAP explanation failed: {shap_error}", exc_info=True)
+            reason_text = f"Model explanation unavailable: {str(shap_error)}"
+
+        # ============================================================
+        # 5️⃣ Construct response message
+        # ============================================================
         if prediction == 1:
-            message = f"Employee is predicted to leave. Risk level: {risk_level}"
+            message = (
+                f"Employee is predicted to leave. "
+                f"Risk level: {risk_level}. Top reasons: {reason_text}"
+            )
         else:
-            message = f"Employee is predicted to stay. Risk level: {risk_level}"
-        
-        logger.info(f"Prediction: {prediction}, Probability: {probability:.4f}, Risk: {risk_level}")
-        
+            message = (
+                f"Employee is predicted to stay. "
+                f"Risk level: {risk_level}. Top reasons: {reason_text}"
+            )
+
+        # ============================================================
+        # ✅ Return final structured response
+        # ============================================================
         return PredictionResponse(
-            employee_number=raw_data['EmployeeNumber'],
+            employee_number=int(emp_id),
             attrition_prediction=int(prediction),
-            attrition_probability=round(float(probability), 4),
+            attrition_probability=round(probability, 4),
             risk_level=risk_level,
             message=message
         )
-        
+
     except Exception as e:
         logger.error(f"Prediction error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+
 
 @app.get("/feature-info")
 def feature_info():
@@ -346,38 +480,46 @@ def feature_info():
 # Model input:
 
 '''
-{
-  "Age": 41,
-  "BusinessTravel": "Travel_Rarely",
-  "DailyRate": 1102,
-  "Department": "Sales",
-  "DistanceFromHome": 1,
-  "Education": 2,
-  "EducationField": "Life Sciences",
-  "EmployeeNumber": 1,
-  "EnvironmentSatisfaction": 2,
-  "Gender": "Female",
-  "HourlyRate": 94,
-  "JobInvolvement": 3,
-  "JobLevel": 2,
-  "JobRole": "Sales Executive",
-  "JobSatisfaction": 4,
-  "MaritalStatus": "Single",
-  "MonthlyIncome": 5993,
-  "MonthlyRate": 19479,
-  "NumCompaniesWorked": 8,
-  "OverTime": "Yes",
-  "PercentSalaryHike": 11,
-  "PerformanceRating": 3,
-  "RelationshipSatisfaction": 1,
-  "StockOptionLevel": 0,
-  "TotalWorkingYears": 8,
-  "TrainingTimesLastYear": 0,
-  "WorkLifeBalance": 1,
-  "YearsAtCompany": 6,
-  "YearsInCurrentRole": 4,
-  "YearsSinceLastPromotion": 0,
-  "YearsWithCurrManager": 5
-}
+    {
+    "Age": 41,
+    "BusinessTravel": "Travel_Rarely",
+    "DailyRate": 1102,
+    "Department": "Sales",
+    "DistanceFromHome": 1,
+    "Education": 2,
+    "EducationField": "Life Sciences",
+    "EmployeeNumber": 1,
+    "EnvironmentSatisfaction": 2,
+    "Gender": "Female",
+    "HourlyRate": 94,
+    "JobInvolvement": 3,
+    "JobLevel": 2,
+    "JobRole": "Sales Executive",
+    "JobSatisfaction": 4,
+    "MaritalStatus": "Single",
+    "MonthlyIncome": 5993,
+    "MonthlyRate": 19479,
+    "NumCompaniesWorked": 8,
+    "OverTime": "Yes",
+    "PercentSalaryHike": 11,
+    "PerformanceRating": 3,
+    "RelationshipSatisfaction": 1,
+    "StockOptionLevel": 0,
+    "TotalWorkingYears": 8,
+    "TrainingTimesLastYear": 0,
+    "WorkLifeBalance": 1,
+    "YearsAtCompany": 6,
+    "YearsInCurrentRole": 4,
+    "YearsSinceLastPromotion": 0,
+    "YearsWithCurrManager": 5
+    }
 '''
 # ============================================================================
+
+{
+  "employee_number": 1,
+  "attrition_prediction": 1,
+  "attrition_probability": 0.7346,
+  "risk_level": "High",
+  "message": "Employee is predicted to leave. Risk level: High. Top reasons: Age (decreased attrition risk); DailyRate (decreased attrition risk); DistanceFromHome (decreased attrition risk)."
+}
