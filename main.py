@@ -325,9 +325,9 @@ def health_check():
 def predict(employee_data: EmployeeDataRaw):
     """Predict employee attrition from raw employee data and provide explainability message."""
     try:
-        # ============================================================
+
         # 1️⃣ Load model and preprocessor
-        # ============================================================
+
         model, preprocessor = load_model_and_preprocessor()
 
         # Convert Pydantic object to dictionary
@@ -335,16 +335,16 @@ def predict(employee_data: EmployeeDataRaw):
         emp_id = raw_data.get("EmployeeNumber", -1)
         logger.info(f"Received prediction request for Employee #{emp_id}")
 
-        # ============================================================
+
         # 2️⃣ Preprocess input
-        # ============================================================
+
         X_preprocessed = preprocessor.transform(raw_data)
         X_df = pd.DataFrame(X_preprocessed, columns=preprocessor.expected_features)
         logger.info(f"Preprocessing successful. Shape: {X_df.shape}")
 
-        # ============================================================
+
         # 3️⃣ Model prediction
-        # ============================================================
+
         prediction = model.predict(X_preprocessed)[0]
         probability = float(model.predict_proba(X_preprocessed)[0][1])
 
@@ -356,9 +356,9 @@ def predict(employee_data: EmployeeDataRaw):
         else:
             risk_level = "High"
 
-        # ============================================================
+
         # 4️⃣ SHAP EXPLANATION (Safe version)
-        # ============================================================
+
         reason_text = "Model explanation unavailable."  # Default fallback
         
         try:
@@ -425,9 +425,9 @@ def predict(employee_data: EmployeeDataRaw):
             logger.error(f"SHAP explanation failed: {shap_error}", exc_info=True)
             reason_text = f"Model explanation unavailable: {str(shap_error)}"
 
-        # ============================================================
+
         # 5️⃣ Construct response message
-        # ============================================================
+
         if prediction == 1:
             message = (
                 f"Employee is predicted to leave. "
@@ -439,9 +439,9 @@ def predict(employee_data: EmployeeDataRaw):
                 f"Risk level: {risk_level}. Top reasons: {reason_text}"
             )
 
-        # ============================================================
+
         # ✅ Return final structured response
-        # ============================================================
+
         return PredictionResponse(
             employee_number=int(emp_id),
             attrition_prediction=int(prediction),
@@ -476,7 +476,7 @@ def feature_info():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load preprocessor: {str(e)}")
     
-# ============================================================================
+
 # Model input:
 
 '''
