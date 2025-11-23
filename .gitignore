@@ -1,2 +1,7 @@
 app.py
 venv
+main_1.py
+standalone_setup.py
+test_example_from_database/
+n8n_workflow/
+test_api.py
