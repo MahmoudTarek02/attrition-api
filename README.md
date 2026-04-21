@@ -28,7 +28,7 @@ The machine learning model was trained in Google Colab with preprocessed data (e
 2. **FastAPI Service**: Accepts raw employee data and returns predictions
 3. **n8n Integration**: Automated workflow to fetch data from PostgreSQL, get predictions, and update the database
 
-### What We Accomplished
+# Done
 ✅ Trained multiple ML models in Google Colab (Logistic Regression, Random Forest, Gradient Boosting, XGBoost, SVM)  
 ✅ Selected best model (Gradient Boosting) and saved it  
 ✅ Created preprocessing pipeline matching Colab preprocessing  
